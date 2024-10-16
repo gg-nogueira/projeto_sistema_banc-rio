@@ -1,18 +1,28 @@
-def depositar(conta):
+def confirmar_operacao():
+    """Solicita confirmação do usuário para continuar a operação."""
+    while True:
+        resposta_senha = input("Digite sua senha para confirmar: ").strip()
+        return resposta_senha
+
+
+def depositar(conta, confirmacao):
     try:
-        valor = float(input("Quanto você quer depositar? "))
+        valor = float(input("Quanto você quer depositar? ").strip())
         if valor > 0:
-            conta['saldo'] += valor
-            conta['historico'].append(f"Depósito: +R${valor:.2f}")
-            print(f"Depósito de R${valor:.2f} realizado com sucesso!")
+            if confirmar_operacao()==confirmacao:
+                conta['saldo'] += valor
+                conta['historico'].append(f"Depósito: +R${valor:.2f}")
+                print(f"Depósito de R${valor:.2f} realizado com sucesso!")
+            else:
+                print("Senha incorreta")
         else:
             print("Erro! Valor de depósito inválido.")
     except ValueError:
         print("Erro! Por favor, insira um valor numérico válido.")
 
-def sacar(conta):
+def sacar(conta, confirmacao):
     try:
-        valor = float(input("Quanto você gostaria de sacar? (Limite de R$500) "))
+        valor = float(input("Quanto você gostaria de sacar? (Limite de R$500) ").strip())
         if valor > conta['saldo']:
             print("Erro! Saldo insuficiente.")
         elif valor > 500:

@@ -4,4 +4,4 @@ def exibir_menu():
     2- Sacar
     3- Ver extrato
     4- Encerrar""")
-    return input("Escolha uma opção: ")
+    return input("Escolha uma opção: ").strip()
