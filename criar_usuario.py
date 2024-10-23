@@ -1,46 +1,49 @@
 import re
 import random
+import mysql
+
 
 # Expressões regulares para validação de CPF e senha
 cpf_regex = re.compile(r'^\d{11}$')  # regex de CPF
 senha_regex = re.compile(r'^\d{6}$')
 
-def criar_usuario(usuarios):
-    nome = input("Digite seu nome: ").strip().title()
-    cpf = input("Digite seu CPF (somente números): ").strip()
-    
-    # Validação de CPF com regex
-    if not cpf_regex.match(cpf):
-        print("Erro! CPF inválido. Certifique-se de que está inserindo apenas 11 números.")
-        return None
+def criar_usuario(conexao):
+    cursor = conexao.cursor()
 
-    # Verifica se o CPF já está cadastrado
-    if cpf in usuarios:
-        print("Erro! Já existe um usuário cadastrado com este CPF.")
-        return None
+    nome = input("Digite seu nome: ")
+    cpf = input("Digite seu CPF (somente números): ")
+    data_nascimento = input("Digite sua data de nascimento (DD/MM/AAAA): ")
 
-    data_nascimento = input("Digite sua data de nascimento (DD/MM/AAAA): ").strip()
+    # Verificar se o CPF já existe no banco de dados
+    cursor.execute("SELECT cpf FROM usuarios WHERE cpf = %s", (cpf,))
+    if cursor.fetchone():
+        print("Erro! Já existe um usuário com esse CPF.")
+        return
 
     while True:
-        senha = input("Digite sua senha (6 dígitos): ").strip()
-        if senha_regex.match(senha):
-            break  # A senha é válida
+        senha = input("Digite sua senha (6 dígitos): ")
+        if re.match(r'^\d{6}$', senha):
+            break
         else:
-            print("Erro! A senha deve conter exatamente 6 dígitos. Tente novamente.")
+            print("A senha deve ter exatamente 6 dígitos.")
 
-    numero_conta = random.randint(10000, 99999)  # Gerar número de conta aleatório
-    
-    # Cria um novo usuário
-    usuarios[cpf] = {
-        "nome": nome,
-        "data_nascimento": data_nascimento,
-        "senha": senha,
-        "conta": {
-            "numero": numero_conta,
-            "saldo": 0,  # Saldo inicial
-            "historico": []  # Histórico de movimentações 
-        }
-    }
+    numero_conta = random.randint(10000, 99999)
 
-    print(f"Conta número {numero_conta} para o usuário {nome} criada com sucesso!\n\n")
-    return cpf, numero_conta
+    # Inserir os dados do usuário e conta no banco de dados
+    try:
+        cursor.execute(
+            "INSERT INTO usuarios (cpf, nome, data_nascimento, senha) VALUES (%s, %s, %s, %s)",
+            (cpf, nome, data_nascimento, senha)
+        )
+        cursor.execute(
+            "INSERT INTO contas (numero_conta, saldo, cpf_usuario) VALUES (%s, %s, %s)",
+            (numero_conta, 0, cpf)
+        )
+        conexao.commit()
+        print(f"Conta número {numero_conta} para o usuário {nome} criada com sucesso!\n\n")
+    except mysql.connector.Error as err:
+        print(f"Erro ao criar conta: {err}")
+        conexao.rollback()
+
+    cursor.close()
+
